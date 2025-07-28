@@ -1,0 +1,15 @@
+[Unit]
+Description=String Search TCP Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Documents/Introductory_Task
+ExecStart=/usr/bin/env python3 -m server.server
+Restart=always
+User=%i
+Environment=PYTHONPATH=%h/Documents/Introductory_Task
+
+[Install]
+WantedBy=multi-user.target
+
