@@ -45,7 +45,8 @@ def test_file_not_found(tmp_path: Path) -> None:
     config_path: str = create_temp_config(tmp_path, "linuxpath=nonexistent.txt\n")
     with pytest.raises(SystemExit) as exc:
         StringSearchServer(config_path=config_path)
-    assert "❌ Failed to load file" in str(exc.value)
+    assert "Failed to load file" in str(exc.value)
+
 
 def test_empty_query(tmp_path: Path) -> None:
     """Test sending an empty query."""

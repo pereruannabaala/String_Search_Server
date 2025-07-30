@@ -25,7 +25,8 @@ def test_load_file_raises_for_nonexistent_file(tmp_path: Path) -> None:
     fake_path = tmp_path / "no_file.txt"
     with pytest.raises(SystemExit) as exc:
         load_file(str(fake_path))
-    assert "❌ Failed to load file" in str(exc.value)
+    assert "Failed to load file" in str(exc.value)
+
     
 def test_load_file_strips_newlines(tmp_path: Path) -> None:
     """Test that load_file strips newlines from file lines."""

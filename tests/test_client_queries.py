@@ -4,6 +4,7 @@ import threading
 import time
 import pytest
 from server.server import StringSearchServer
+from typing import cast
 
 
 HOST = "127.0.0.1"
@@ -14,7 +15,7 @@ def get_free_port() -> int:
     """Return an available port on the system."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("", 0))
-        return s.getsockname()[1]
+        return cast(int, s.getsockname()[1])
 
 
 def start_test_server(port: int) -> StringSearchServer:
@@ -57,7 +58,6 @@ def test_valid_query_response() -> None:
     start_test_server(port)
     response = send_query("apple", port=port, use_ssl=True)
     assert response.strip() in ["STRING EXISTS", "STRING NOT FOUND"]
-
 
 
 def test_invalid_query_response() -> None:

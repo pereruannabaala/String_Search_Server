@@ -39,7 +39,7 @@ def main() -> None:
         return
 
     query: str = sys.argv[1]
-    config: dict[str, Union[str, int, bool]] = read_config("config.txt")
+    config: dict[str, str] = read_config("config.txt")
 
     host: str = str(config.get("host", "127.0.0.1"))
     port: int = int(config.get("port", 44445))

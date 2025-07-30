@@ -16,6 +16,7 @@ def load_file(path: str) -> list[str]:
     except Exception as e:
         raise SystemExit(f"❌ Failed to load file: {e}")
 
+
 def search_string(data: Iterable[str], query: str) -> bool:
     """
     Searches for a query string in the provided dataset.

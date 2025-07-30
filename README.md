@@ -2,6 +2,45 @@
 
 This is a high-performance TCP server designed to search for strings within large text files. In this context, we used the file 200k.txt. The server supports SSL connections, configurable parameters, and can benchmark multiple file-search algorithms. It includes a full testing suite (pytest) and benchmarking scripts that generate performance reports in PDF format.
 
+# Project Folders
+```
+.
+├── 200k.txt
+├── README.md
+├── benchmark_algorithms.py
+├── benchmark_file_sizes.py
+├── client.py
+├── config.txt
+├── generate_speed_report.py
+├── main.py
+├── pdf/
+│ ├── load_test_batches.png
+│ ├── performance_chart.png
+│ └── speed_report.pdf
+├── requirements.txt
+├── run_server.sh
+├── search_algorithms.py
+├── server/
+│ ├── init.py
+│ ├── config.py
+│ ├── file_search.py
+│ └── server.py
+├── ssl/
+│ ├── cert.pem
+│ └── key.pem
+├── stress_test_client.py
+├── string_search.service
+├── temp_config.txt
+└── tests/
+├── test_client_queries.py
+├── test_concurrent_queries.py
+├── test_config.py
+├── test_file_search.py
+├── test_logging_output.py
+├── test_server_expectations.py
+└── test_server_logic.py
+```
+
 # Features
 
 - **String Search Server**: Responds to client queries with ``STRING EXISTS`` or ``STRING NOT FOUND``.
@@ -11,33 +50,54 @@ This is a high-performance TCP server designed to search for strings within larg
 - **Unit Tests**: Full test coverage using pytest.
 - **Linux Service (Daemon) Support**: Run the server as a background service.
 
-# Generating SSL Certificates
-To enable SSL/TLS authentication for the server, you need to create a self-signed SSL certificate and key pair.
+#  Enabling SSL Authentication
+To securely transmit data between the client and server, this project supports SSL/TLS encryption. You’ll need to generate a self-signed SSL certificate and configure your ``config.txt`` accordingly.
 
-**Steps**
+### **Files Required**
+- ``cert.perm`` - the SSL certificate file
+- `` key.perm`` -  the private key file
 
-**1. Generate a private key:**
+These will be used by the server to establish encrypted connections with clients.
+
+### **Steps to Generate SSL Certificate and Key**
+
+**1. Generate private key**
 ```
 openssl genrsa -out key.pem 2048
 ```
-**2. Create a certificate signing request (CSR):**
+
+**2. Create a certificate signing request(CSR)**
 ```
 openssl req -new -key key.pem -out cert.csr
 ```
-- When prompted for a "Common Name (CN)", enter:
+- When prompted for ``Common Name (CN)``, enter:
 ```
 localhost
 ```
-**3. Generate a self-signed certificate:**
+
+**3. Generate a self-signed certificate**
 ```
 openssl x509 -req -days 365 -in cert.csr -signkey key.pem -out cert.pem
 ```
-**4.Update ``config.txt``**
+
+**4. Organize the SSL files:**
+Move your generated files to the ``ssl/`` folder in the root directory of the project:
+```
+Introductory-Task/
+├── ssl/
+│   ├── cert.pem
+│   └── key.pem
+```
+
+5. Update your ``config.txt`` file to enable SSL:
 ```
 use_ssl=True
-certfile=cert.pem
-keyfile=key.pem
+certfile=ssl/cert.pem
+keyfile=ssl/key.pem
 ```
+
+### **Running the Server with SSL**
+When ``use_ssl=True`` is set in ``config.txt``, the server will wrap the socket using the provided certificate and key, enabling encrypted communication with clients.
 
 # Running the Server
 

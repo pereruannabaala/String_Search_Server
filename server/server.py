@@ -27,7 +27,7 @@ class StringSearchServer:
         if not self.file_path:
             raise SystemExit("❌ Missing 'linuxpath' in config.txt.")
 
-        self.reread_on_query: bool = bool(self.config.get("reread_on_query", False))
+        self.reread_on_query: bool = str(self.config.get("reread_on_query", "False")).lower() == "true"
         self.max_payload: int = int(self.config.get("max_payload", 1024))
         self.use_ssl: bool = bool(self.config.get("use_ssl", False))
 
@@ -53,14 +53,9 @@ class StringSearchServer:
                 conn.sendall(b"QUERY TOO LARGE\n")
                 return
 
-            if len(raw_bytes) > self.max_payload:
-                conn.sendall(b"QUERY TOO LARGE\n")
-                return
-
             if not raw_bytes:
                 conn.sendall(b"STRING NOT FOUND\n")
                 return
-
             try:
                 query: str = raw_bytes.decode("utf-8").strip()
             except UnicodeDecodeError:
