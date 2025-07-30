@@ -7,7 +7,7 @@ import threading
 import time
 from server.server import StringSearchServer
 
-CERT_PATH = "ssl/cert.pem"  # ✅ Path to your trusted self-signed cert
+CERT_PATH = "ssl/cert.pem"  # Path to the trusted self-signed cert
 
 
 def get_free_port() -> int:
@@ -19,16 +19,16 @@ def get_free_port() -> int:
 
 
 def get_test_ssl_context() -> ssl.SSLContext:
-    """Return an SSL context that trusts the self-signed cert."""
+    """Return an SSL context that trusts the self-signed certificate."""
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_REQUIRED
-    context.load_verify_locations(CERT_PATH)  # ✅ Load the self-signed cert
+    context.load_verify_locations(CERT_PATH)  # Load the self-signed cert
     return context
 
 
 def wait_for_server(host: str, port: int, timeout: float = 2.0) -> None:
-    """Wait until the server is listening, supporting SSL handshake."""
+    """Wait until the server is listening and supports the SSL handshake."""
     start = time.time()
     context = get_test_ssl_context()
 

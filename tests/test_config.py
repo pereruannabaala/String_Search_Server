@@ -7,7 +7,7 @@ from server.config import read_config
 
 def create_temp_config(tmp_path: Path, content: str) -> Path:
     """
-    Create a temporary config file with the given content and return its path.
+    Create a temporary configuration file with the specified content and return its path.
     """
     config_file = tmp_path / "config.txt"
     config_file.write_text(content)
@@ -16,7 +16,7 @@ def create_temp_config(tmp_path: Path, content: str) -> Path:
 
 def test_valid_config(tmp_path: Path) -> None:
     """
-    Test that a valid configuration file is read correctly.
+    Check that a valid configuration file is read appropriately.
     """
     content = "host=127.0.0.1\nport=44445\nuse_ssl=True\n"
     config_path = create_temp_config(tmp_path, content)
@@ -29,7 +29,7 @@ def test_valid_config(tmp_path: Path) -> None:
 
 def test_config_with_extra_spaces(tmp_path: Path) -> None:
     """
-    Test configuration lines with extra spaces and newlines.
+    Test configuration lines that contain additional spaces and newlines.
     """
     content = " host =  127.0.0.1 \n port = 44445 \n\nuse_ssl= False  "
     config_path = create_temp_config(tmp_path, content)
@@ -42,7 +42,7 @@ def test_config_with_extra_spaces(tmp_path: Path) -> None:
 
 def test_config_with_comments_and_blank_lines(tmp_path: Path) -> None:
     """
-    Test that comments (#) and blank lines are ignored.
+    Test that comments and blank lines are ignored.
     """
     content = """
 # This is a comment
@@ -59,7 +59,7 @@ port=44445
 
 def test_invalid_config_line(tmp_path: Path) -> None:
     """
-    Test that invalid config lines (missing '=') are skipped.
+    Check that invalid configuration lines (missing '=') are skipped.
     """
     content = "host=localhost\ninvalid_line\nport=44445\n"
     config_path = create_temp_config(tmp_path, content)

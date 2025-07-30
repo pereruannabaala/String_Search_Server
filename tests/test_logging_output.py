@@ -6,16 +6,14 @@ from server.server import StringSearchServer
 
 
 def create_temp_config(tmp_path: Path, content: str) -> Path:
-    """
-    Create a temporary configuration file for testing logging.
-    """
+    """Create a temporary configuration file to test logging."""
     config_file = tmp_path / "config.txt"
     config_file.write_text(content)
     return config_file
 
 
 def test_server_start_logging(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-    """Test that starting the server logs the expected message."""
+    """Check that launching the server produces the expected message."""
     data_file = tmp_path / "test_data.txt"
     data_file.write_text("apple\nbanana\n")
     config_path = create_temp_config(tmp_path, f"linuxpath={data_file}\n")
@@ -30,9 +28,7 @@ def test_handle_client_logs_query(tmp_path: Path, caplog: pytest.LogCaptureFixtu
     server = StringSearchServer(config_path=str(config_path))
 
 def test_handle_client_logs_error(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-    """
-    Test that handle_client logs an error when a broken connection occurs.
-    """
+    """Test that handle_client logs an error when a broken connection occurs."""
     # Create the data file
     data_file = tmp_path / "test_data.txt"
     data_file.write_text("apple\nbanana\n")

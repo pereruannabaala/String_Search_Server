@@ -100,7 +100,7 @@ def plot_results(results: Dict[str, Optional[float]], output_path: str = "pdf/pe
 
 if __name__ == "__main__":
     file_path: str = "200k.txt"
-    search_term: str = "5;0;6;28;0;20;3;0;"  # Pick a string that exists in your 200k.txt
+    search_term: str = "5;0;6;28;0;20;3;0;"  #Pick a string that exists in 200k.txt
 
     results: Dict[str, Optional[float]] = run_benchmarks(file_path, search_term)
     print("Benchmark results (in milliseconds):")

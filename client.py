@@ -15,7 +15,7 @@ def create_connection(host: str, port: int, use_ssl: bool) -> Union[socket.socke
         if use_ssl:
             context: ssl.SSLContext = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 
-            # ✅ Load and trust the self-signed certificate manually
+            # Load and trust the self-signed certificate manually
             context.load_verify_locations("ssl/cert.pem")
             context.check_hostname = False
             context.verify_mode = ssl.CERT_REQUIRED

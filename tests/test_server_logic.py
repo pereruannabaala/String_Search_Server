@@ -71,7 +71,6 @@ def start_test_server(tmp_path_factory: pytest.TempPathFactory) -> Generator[Tup
     server.stop()
     server_thread.join(timeout=1)
 
-# ------------------------- Query Tests -------------------------
 
 def test_valid_query_response(start_test_server: Tuple[StringSearchServer, int]) -> None:
     server, port = start_test_server
@@ -102,7 +101,6 @@ def test_invalid_encoding_response(start_test_server: Tuple[StringSearchServer, 
     assert response == "INVALID ENCODING"
     sock.close()
 
-# ------------------------- SSL Test -------------------------
 
 def test_ssl_query_response(tmp_path_factory: pytest.TempPathFactory) -> None:
     tmp_path = tmp_path_factory.mktemp("ssl_config")
@@ -139,7 +137,6 @@ def test_ssl_query_response(tmp_path_factory: pytest.TempPathFactory) -> None:
     server.stop()
     server_thread.join(timeout=1)
 
-# ------------------------- Startup and Config Tests -------------------------
 
 def test_server_fails_on_missing_data_file(tmp_path_factory: pytest.TempPathFactory) -> None:
     tmp_path = tmp_path_factory.mktemp("missing_data")
@@ -155,7 +152,7 @@ def test_server_fails_on_missing_config_file() -> None:
     with pytest.raises(SystemExit):
         _ = StringSearchServer(config_path="nonexistent_config.txt")
 
-# ------------------------- File Load Exception Handling -------------------------
+
 
 def test_init_raises_system_exit_when_file_path_not_found(tmp_path: Path) -> None:
     config_path = tmp_path / "config.txt"
@@ -176,6 +173,7 @@ def test_init_raises_system_exit_on_unexpected_load_file_error(tmp_path: Path) -
             StringSearchServer(config_path=str(config_path))
         assert "❌ Failed to load file: Unexpected error" in str(excinfo.value)
 
+
 def test_load_file_failure_triggers_sysexit(monkeypatch: MonkeyPatch) -> None:
     def mock_open(*args: Any, **kwargs: Any) -> Any:
         raise IOError("simulated open failure")
@@ -186,6 +184,7 @@ def test_load_file_failure_triggers_sysexit(monkeypatch: MonkeyPatch) -> None:
         load_file("fake.txt")
 
     assert "❌ Failed to load file" in str(excinfo.value)
+
 
 def test_query_too_large(tmp_path: Path) -> None:
     file_path = tmp_path / "data.txt"
@@ -222,9 +221,8 @@ def test_missing_file_path(tmp_path: Path) -> None:
     assert "Failed to load file" in str(e.value)
 
 
-
 def test_file_not_found_explicit(tmp_path: Path) -> None:
-    # Create a config with a path to a clearly nonexistent file
+    # Create a configuration with a path to an obviously nonexistent file.
     missing_file = tmp_path / "does_not_exist.txt"
     config_path = tmp_path / "config.txt"
     config_path.write_text(f"linuxpath={missing_file}\nreread_on_query=False\n")

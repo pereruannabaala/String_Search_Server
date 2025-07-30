@@ -43,7 +43,7 @@ class StringSearchServer:
     def handle_client(self, conn: socket.socket, addr: tuple[str, int]) -> None:
         start_time: float = time.time()
         try:
-            raw_bytes = conn.recv(self.max_payload + 1)  # read max_payload + 1 bytes
+            raw_bytes = conn.recv(self.max_payload + 1)  # Read max_payload + 1 bytes.
 
             if not raw_bytes:
                 conn.sendall(b"STRING NOT FOUND\n")
@@ -102,7 +102,7 @@ class StringSearchServer:
                 logging.info(f"Server dynamically bound to port {self.port}")
 
             self.sock.listen()
-            self.sock.settimeout(1.0)  # <- Allow clean shutdown
+            self.sock.settimeout(1.0)  # Allow a clean shutdown
 
             if self.use_ssl:
                 try:

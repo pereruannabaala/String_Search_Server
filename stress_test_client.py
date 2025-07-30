@@ -7,7 +7,7 @@ from server.config import read_config
 
 def send_query(query: str, use_ssl: bool, host: str, port: int) -> bool:
     """
-    Send a single query to the server and return True if the response is valid.
+    Send a single query to the server and returns true if the response is valid.
     """
     try:
         sock: socket.socket = socket.create_connection((host, port), timeout=2)
@@ -54,12 +54,12 @@ def stress_test() -> None:
         total_sent += batch_size
         elapsed: float = end - start
         print(
-            f"✅ Batch {batch}: {batch_size} queries in {elapsed:.2f}s — "
+            f"Batch {batch}: {batch_size} queries in {elapsed:.2f}s — "
             f"success: {success}, failed: {batch_size - success}"
         )
 
         if success < batch_size:
-            print("❌ Server started dropping or failing queries — likely reached limit.")
+            print("❌ Server started dropping or failing queries, likely reached limit.")
             break
 
     print(f"\nTotal Queries Sent: {total_sent}")

@@ -8,7 +8,7 @@ from typing import cast
 
 
 HOST = "127.0.0.1"
-CERT_PATH = "ssl/cert.pem"  # Path to the trusted self-signed cert
+CERT_PATH = "ssl/cert.pem"  # Path to the trusted self-signed certificate.
 
 
 def get_free_port() -> int:
@@ -23,7 +23,7 @@ def start_test_server(port: int) -> StringSearchServer:
     server = StringSearchServer(host=HOST, port=port)
     thread = threading.Thread(target=server.start, daemon=True)
     thread.start()
-    time.sleep(1)  # Allow server to start
+    time.sleep(1)  # Allow the server to start.
     return server
 
 
@@ -43,7 +43,7 @@ def send_query(query: str, port: int, use_ssl: bool = False) -> str:
         context = ssl.create_default_context()
         context.check_hostname = False
         context.verify_mode = ssl.CERT_REQUIRED
-        context.load_verify_locations(CERT_PATH) # Load your trusted cert
+        context.load_verify_locations(CERT_PATH) # Load the trusted cert
         sock = context.wrap_socket(sock, server_hostname=HOST)
 
     sock.sendall(query.encode())
@@ -53,7 +53,7 @@ def send_query(query: str, port: int, use_ssl: bool = False) -> str:
 
 
 def test_valid_query_response() -> None:
-    """Ensure valid query returns a correct response."""
+    """Ensure that a legitimate query provides the right response."""
     port = get_free_port()
     start_test_server(port)
     response = send_query("apple", port=port, use_ssl=True)
