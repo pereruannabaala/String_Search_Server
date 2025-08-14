@@ -1,110 +1,235 @@
-import time
-import re
-import bisect
-from concurrent.futures import ThreadPoolExecutor
-from typing import List, Callable, Dict, Optional
-import matplotlib.pyplot as plt
 import os
+import time
+import random
+import string
+import re
+from typing import Callable, Any, Sequence, List, Optional, Set, Tuple, Dict
+from concurrent.futures import ThreadPoolExecutor
+import pandas as pd
+import matplotlib.pyplot as plt
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
 
 
-def load_file_lines(file_path: str) -> List[str]:
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        return [line.strip() for line in f if line.strip()]
+# Caches for algorithms
+
+_linear_scan_cache: Optional[List[str]] = None
+_generator_scan_cache: Optional[List[str]] = None
+_regex_match_cache: Optional[List[str]] = None
+_set_membership_cache: Optional[Set[str]] = None
+_multithreaded_scan_cache: Optional[List[str]] = None
+_binary_search_cache: Optional[List[str]] = None
 
 
-def linear_search(lines: List[str], target: str) -> bool:
-    return target in lines
+# Benchmark Algorithms
+
+def linear_scan(file_path: str, query: str, reread_on_query: bool) -> bool:
+    global _linear_scan_cache
+    if reread_on_query or _linear_scan_cache is None:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            _linear_scan_cache = f.readlines()
+    return any(query in line for line in _linear_scan_cache)
 
 
-def regex_search(lines: List[str], target: str) -> bool:
-    pattern = re.compile(re.escape(target))
-    return any(pattern.fullmatch(line) for line in lines)
+def generator_scan(file_path: str, query: str, reread_on_query: bool) -> bool:
+    global _generator_scan_cache
+    if reread_on_query or _generator_scan_cache is None:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            _generator_scan_cache = list(f)
+    return any(query in line for line in _generator_scan_cache)
 
 
-def set_search(lines: List[str], target: str) -> bool:
-    return target in set(lines)
+def regex_match(file_path: str, query: str, reread_on_query: bool) -> bool:
+    global _regex_match_cache
+    pattern = re.compile(query)
+    if reread_on_query or _regex_match_cache is None:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            _regex_match_cache = f.readlines()
+    return any(pattern.search(line) for line in _regex_match_cache)
 
 
-def binary_search(lines: List[str], target: str) -> bool:
-    sorted_lines = sorted(lines)
-    index = bisect.bisect_left(sorted_lines, target)
-    return index < len(sorted_lines) and sorted_lines[index] == target
+def set_membership(file_path: str, query: str, reread_on_query: bool) -> bool:
+    global _set_membership_cache
+    if reread_on_query or _set_membership_cache is None:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            _set_membership_cache = set(f)
+    return query in _set_membership_cache
 
 
-def multithreaded_search(lines: List[str], target: str) -> bool:
-    def chunk_search(chunk: List[str]) -> bool:
-        return target in chunk
+def multithreaded_scan(file_path: str, query: str, reread_on_query: bool) -> bool:
+    global _multithreaded_scan_cache
 
-    chunks: List[List[str]] = [lines[i:i + 10000] for i in range(0, len(lines), 10000)]
+    def search_chunk(chunk: List[str]) -> bool:
+        return any(query in line for line in chunk)
+
+    if reread_on_query or _multithreaded_scan_cache is None:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            _multithreaded_scan_cache = f.readlines()
+
+    lines = _multithreaded_scan_cache
+    chunks = [lines[i:i + 1000] for i in range(0, len(lines), 1000)]
     with ThreadPoolExecutor() as executor:
-        results = executor.map(chunk_search, chunks)
+        results = executor.map(search_chunk, chunks)
     return any(results)
 
 
-def generator_search(lines: List[str], target: str) -> bool:
-    return any(line == target for line in lines)
+def binary_search(file_path: str, query: str, reread_on_query: bool) -> bool:
+    global _binary_search_cache
+    if reread_on_query or _binary_search_cache is None:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            _binary_search_cache = sorted(f.readlines())
+
+    lines = _binary_search_cache
+    left, right = 0, len(lines) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if query == lines[mid]:
+            return True
+        elif query < lines[mid]:
+            right = mid - 1
+        else:
+            left = mid + 1
+    return False
+
+# -----------------------------
+# Algorithms dict
+# -----------------------------
+algorithms: Dict[str, Callable[[str, str, bool], bool]] = {
+    "Linear Scan": linear_scan,
+    "Generator Scan": generator_scan,
+    "Regex Match": regex_match,
+    "Set Membership": set_membership,
+    "Multithreaded Scan": multithreaded_scan,
+    "Binary Search": binary_search
+}
+
+# -----------------------------
+# Benchmark Runner
+# -----------------------------
+TEST_FILES_DIR = "benchmark_data"
+os.makedirs(TEST_FILES_DIR, exist_ok=True)
+
+def generate_test_file(file_path: str, num_lines: int) -> None:
+    with open(file_path, 'w', encoding='utf-8') as f:
+        for _ in range(num_lines):
+            f.write(''.join(random.choices(string.ascii_letters + " ", k=50)) + "\n")
 
 
 def benchmark_algorithm(
-    name: str,
-    func: Callable[[List[str], str], bool],
-    lines: List[str],
-    target: str
-) -> float:
-    start: float = time.perf_counter()
-    func(lines, target)
-    end: float = time.perf_counter()
-    return (end - start) * 1000  # milliseconds
-
-
-def run_benchmarks(file_path: str, target: str) -> Dict[str, Optional[float]]:
-    lines: List[str] = load_file_lines(file_path)
-    algorithms: Dict[str, Callable[[List[str], str], bool]] = {
-        "Linear Scan": linear_search,
-        "Regex Match": regex_search,
-        "Set Membership": set_search,
-        "Binary Search": binary_search,
-        "Multithreaded": multithreaded_search,
-        "Generator Scan": generator_search,
-    }
-
-    results: Dict[str, Optional[float]] = {}
-    for name, func in algorithms.items():
-        try:
-            duration: float = benchmark_algorithm(name, func, lines, target)
-            results[name] = round(duration, 2)
-        except Exception as e:
-            results[name] = None
-            print(f"{name} failed: {e}")
+    algorithm: Callable[[str, str, bool], bool],
+    file_sizes: Sequence[int],
+    reread_values: Sequence[bool]
+) -> List[Tuple[int, bool, float]]:
+    results: List[Tuple[int, bool, float]] = []
+    for reread_on_query in reread_values:
+        for size in file_sizes:
+            file_path = os.path.join(TEST_FILES_DIR, f"test_{size}.txt")
+            if not os.path.exists(file_path):
+                generate_test_file(file_path, size)
+            query = "apple"
+            start_time = time.perf_counter()
+            algorithm(file_path, query, reread_on_query)
+            elapsed = (time.perf_counter() - start_time) * 1000
+            results.append((size, reread_on_query, elapsed))
     return results
 
 
-def plot_results(results: Dict[str, Optional[float]], output_path: str = "pdf/performance_chart.png") -> None:
-    names: List[str] = list(results.keys())
-    times: List[float] = [time_val if time_val is not None else 0.0 for time_val in results.values()]
 
-    plt.figure(figsize=(10, 6))
-    bars = plt.barh(names, times, color='skyblue')
-    plt.xlabel("Time (ms)")
-    plt.title("Performance of File Search Algorithms")
-    plt.grid(axis='x')
+# Run Benchmarks and generate report
+file_sizes: List[int] = [10_000, 100_000, 500_000, 1_000_000]
+reread_values: List[bool] = [True, False]
+all_results: List[Dict[str, Any]] = []
 
-    for bar, time_val in zip(bars, times):
-        plt.text(bar.get_width() + 2, bar.get_y() + bar.get_height() / 2, f"{time_val:.2f} ms", va='center')
+for algo_name, algo_func in algorithms.items():
+    results = benchmark_algorithm(algo_func, file_sizes, reread_values)
+    for size, reread, elapsed in results:
+        all_results.append({
+            "Algorithm": algo_name,
+            "File Size": size,
+            "Reread On Query": reread,
+            "Time (ms)": elapsed
+        })
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    plt.tight_layout()
-    plt.savefig(output_path)
-    plt.close()
+df = pd.DataFrame(all_results)
 
+# Plot chart
+os.makedirs("pdf", exist_ok=True)
+plt.figure(figsize=(10, 6))
+for algo_name in algorithms.keys():
+    subset = df[(df["Algorithm"] == algo_name) & (df["Reread On Query"] == False)]
+    plt.plot(subset["File Size"], subset["Time (ms)"], marker='o', label=algo_name)
+plt.title("Algorithm Performance Comparison (reread_on_query=False)")
+plt.xlabel("File Size (lines)")
+plt.ylabel("Time (ms)")
+plt.legend()
+plt.grid(True)
+chart_path = os.path.join("pdf", "comparison_chart.png")
+plt.savefig(chart_path)
+plt.close()
 
-if __name__ == "__main__":
-    file_path: str = "200k.txt"
-    search_term: str = "5;0;6;28;0;20;3;0;"  #Pick a string that exists in 200k.txt
+# Save PDF
+pdf_path = os.path.join("pdf", "speed_report.pdf")
+styles = getSampleStyleSheet()
+doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+elements: List[Any] = [Paragraph("Speed Test Report", styles['Title']), Spacer(1, 12)]
 
-    results: Dict[str, Optional[float]] = run_benchmarks(file_path, search_term)
-    print("Benchmark results (in milliseconds):")
-    for algo, time_taken in sorted(results.items(), key=lambda x: (x[1] is None, x[1])):
-        print(f"{algo:<20}: {time_taken} ms")
+for algo_name in algorithms.keys():
+    elements.append(Paragraph(algo_name, styles['Heading2']))
+    algo_df = df[df["Algorithm"] == algo_name].pivot(index="File Size", columns="Reread On Query", values="Time (ms)")
+    data: List[List[str]] = [["File Size", "True (ms)", "False (ms)"]]
+    for fs in file_sizes:
+        true_val: float = float(pd.to_numeric(algo_df.loc[fs, True]))
+        false_val: float = float(pd.to_numeric(algo_df.loc[fs, False]))
+        data.append([str(fs), f"{true_val:.2f}", f"{false_val:.2f}"])
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.black)
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 12))
 
-    plot_results(results)
+elements.append(Paragraph("Overall Comparison Chart (reread_on_query=False)", styles['Heading2']))
+elements.append(Image(chart_path, width=400, height=300))
+doc.build(elements)
+
+print(f"Report saved to {pdf_path}")
+
+# Add this at the bottom of benchmark_algorithms.py
+
+def get_benchmark_elements() -> List[Any]:
+    """Return the list of PDF elements for the benchmark report."""
+    styles = getSampleStyleSheet()
+    elements: List[Any] = [Paragraph("Speed Test Report", styles['Title']), Spacer(1, 12)]
+
+    # Add tables for each algorithm
+    for algo_name in algorithms.keys():
+        elements.append(Paragraph(algo_name, styles['Heading2']))
+        algo_df = df[df["Algorithm"] == algo_name].pivot(index="File Size", columns="Reread On Query", values="Time (ms)")
+
+        data: List[List[str]] = [["File Size", "True (ms)", "False (ms)"]]
+        for fs in file_sizes:
+            true_val: float = float(pd.to_numeric(algo_df.loc[fs, True]))
+            false_val: float = float(pd.to_numeric(algo_df.loc[fs, False]))
+            data.append([str(fs), f"{true_val:.2f}", f"{false_val:.2f}"])
+
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.black)
+        ]))
+        elements.append(table)
+        elements.append(Spacer(1, 12))
+
+    # Add comparison chart
+    chart_path_local = os.path.join("pdf", "comparison_chart.png")
+    elements.append(Paragraph("Overall Comparison Chart (reread_on_query=False)", styles['Heading2']))
+    elements.append(Image(chart_path_local, width=400, height=300))
+
+    return elements

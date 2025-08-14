@@ -73,4 +73,3 @@ def test_linear_search_strips_whitespace() -> None:
     """Test that linear_search ignores leading/trailing whitespace in lines during match."""
     data = ["  apple  ", "\tbanana\n", "  cherry "]
     assert linear_search(data, "banana") is True
-

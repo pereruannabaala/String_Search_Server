@@ -1,143 +1,113 @@
 import os
-from typing import List, Tuple
-import matplotlib.pyplot as plt
-from fpdf import FPDF
+from typing import List, Any
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from benchmark_algorithms import get_benchmark_elements
+from stress_test_client import get_stress_test_elements
+
+styles = getSampleStyleSheet()
 
 
-class PDF(FPDF): 
-    def header(self) -> None:
-        self.set_font("Arial", style="B", size=14)
-        self.cell(0, 10, "File Search Benchmark Report", ln=True, align="C")
-        self.ln(10)
-
-    def chapter_title(self, title: str) -> None:
-        self.set_font("Arial", style="B", size=12)
-        self.cell(0, 10, title, ln=True)
-        self.ln(5)
-
-    def chapter_body(self, text: str) -> None:
-        self.set_font("Arial", size=9)
-        self.multi_cell(0, 10, text)
-        self.ln()
+def section_heading(text: str) -> Paragraph:
+    """Return a heading Paragraph for the report."""
+    return Paragraph(text, styles["Heading1"])
 
 
-def generate_pdf() -> None:
-    pdf = PDF()
-    pdf.add_page()
-
-    # 1. Introduction
-    pdf.chapter_title("1. Introduction")
-    pdf.chapter_body(
-        "This report benchmarks six distinct file search algorithms in the context of building "
-        "a high-performance TCP string search server. The primary objective is to identify which "
-        "approach delivers the fastest response times when querying whether a given string exists "
-        "in a large text file of 200,000+ rows..."
-    )
-
-    # 2. Setup
-    pdf.chapter_title("2. Setup")
-    pdf.chapter_body(
-        "- Operating System: Ubuntu 22.04 (Linux)\n"
-        "- Python Version: 3.10+\n"
-        "- Text File: 200k.txt\n"
-        "- Query Used: '5;0;6;28;0;20;3;0;'\n"
-        "- Configuration File: config.txt\n"
-        "- reread_on_query: False (data is preloaded once into memory at server startup)\n"
-        "- max_payload: 1024 bytes (maximum allowed payload size from client queries)\n"
-        "- Benchmark Tool: Custom Python script (benchmark_algorithms.py)\n"
-        "- Visualization Tool: matplotlib (to generate performance_chart.png)\n"
-        "- Output Report: PDF generated using fpdf library\n"
-    )
-
-    # 3. Benchmark Results
-    pdf.chapter_title("3.1 Benchmark Results (reread_on_query=True)")
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(90, 10, "Algorithm", 1, 0, "C")
-    pdf.cell(90, 10, "Time (ms)", 1, 1, "C")
-
-    bench_true: List[Tuple[str, str]] = [
-        ("Linear Scan", "0.03 ms"),
-        ("Generator Scan", "0.13 ms"),
-        ("Regex Match", "0.41 ms"),
-        ("Set Membership", "14.34 ms"),
-        ("Multithreaded", "30.54 ms"),
-        ("Binary Search", "73.92 ms"),
+def get_intro_section() -> List[Any]:
+    return [
+        section_heading("Introduction"),
+        Paragraph(
+            "This report presents the results of benchmarking multiple string search algorithms "
+            "and stress testing a string search server. The benchmarking evaluates algorithm "
+            "efficiency across datasets of different sizes, while the stress test assesses server "
+            "performance under increasing query loads. Together, these results provide insights "
+            "into the most efficient algorithms and the server's scalability limits.",
+            styles["Normal"]
+        ),
+        Spacer(1, 12)
     ]
-    pdf.set_font("Arial", "", 9)
-    for algo, time_str in bench_true:
-        pdf.cell(90, 10, algo, 1, 0, "C")
-        pdf.cell(90, 10, time_str, 1, 1, "C")
 
-    # 3.2 Benchmark Results (reread_on_query=False)
-    pdf.add_page()
-    pdf.chapter_title("3.2 Benchmark Results (reread_on_query=False)")
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(90, 10, "Algorithm", 1, 0, "C")
-    pdf.cell(90, 10, "Time (ms)", 1, 1, "C")
 
-    bench_false: List[Tuple[str, str]] = [
-        ("Linear Scan", "0.02 ms"),
-        ("Generator Scan", "0.06 ms"),
-        ("Regex Match", "0.32 ms"),
-        ("Set Membership", "11.67 ms"),
-        ("Multithreaded", "17.27 ms"),
-        ("Binary Search", "62.22 ms"),
+def get_setup_section() -> List[Any]:
+    return [
+        section_heading("Setup"),
+        Paragraph(
+            "The evaluation was conducted on datasets containing 10,000; 100,000; 500,000; "
+            "and 1,000,000 lines of randomly generated text. Six algorithms were benchmarked: "
+            "Linear Scan, Generator Scan, Regex Match, Set Membership, Multithreaded Scan, and Binary Search. "
+            "Each algorithm was tested in two modes: re-reading the file for each query and using a cached dataset. "
+            "The stress test measured the server's query throughput (QPS) for different file sizes, "
+            "stopping when the failure rate exceeded 10%.",
+            styles["Normal"]
+        ),
+        Spacer(1, 12)
     ]
-    pdf.set_font("Arial", "", 9)
-    for algo, time_str in bench_false:
-        pdf.cell(90, 10, algo, 1, 0, "C")
-        pdf.cell(90, 10, time_str, 1, 1, "C")
 
-    pdf.ln(20)
 
-    # 4. Chart
-    pdf.chapter_title("4. Performance Chart (reread_on_query=False)")
-    pdf.image("pdf/performance_chart.png", w=160)
-
-    # 6. File Size vs Execution Time Table
-    pdf.add_page()
-    pdf.chapter_title("6. File Size vs Execution Time")
-    file_sizes_data: List[Tuple[str, str]] = [
-        ("10,000 lines", "0.402 ms"),
-        ("50,000 lines", "1.501 ms"),
-        ("100,000 lines", "7.433 ms"),
-        ("250,000 lines", "45.368 ms"),
-        ("500,000 lines", "113.225 ms"),
-        ("1,000,000 lines", "237.959 ms"),
+def get_algorithms_overview_section() -> List[Any]:
+    return [
+        section_heading("Search Algorithms Overview"),
+        Paragraph(
+            "The benchmarked algorithms included:\n"
+            "- Linear Scan: Sequentially scans the file for the query string.\n"
+            "- Generator Scan: Uses a generator to yield lines for checking.\n"
+            "- Regex Match: Uses compiled regular expressions for matching.\n"
+            "- Set Membership: Loads lines into a set for O(1) membership checks.\n"
+            "- Multithreaded Scan: Splits the file into chunks and scans in parallel.\n"
+            "- Binary Search: Operates on sorted lines for logarithmic search time.\n",
+            styles["Normal"]
+        ),
+        Spacer(1, 12)
     ]
-    pdf.set_font("Arial", size=11)
-    pdf.cell(90, 10, "File Size", border=1)
-    pdf.cell(40, 10, "Time (ms)", border=1, ln=True)
-    for size, duration in file_sizes_data:
-        pdf.cell(90, 10, size, border=1)
-        pdf.cell(40, 10, duration, border=1, ln=True)
-
-    # Plot batch performance chart
-    batches: List[str] = ["1-5", "6-10", "11-15", "16-20", "21-25", "26-30", "31-35", "36-40"]
-    times: List[float] = [0.89, 0.88, 0.88, 0.89, 0.89, 0.88, 0.86, 0.87]
-    plt.figure(figsize=(8, 4))
-    plt.bar(batches, times, color="skyblue", edgecolor="black")
-    plt.title("Average Time per Batch (250 Queries)")
-    plt.xlabel("Batch Range")
-    plt.ylabel("Time (seconds)")
-    plt.ylim(0.8, 1.0)
-    for i, t in enumerate(times):
-        plt.text(i, t + 0.005, f"{t:.2f}s", ha="center", fontsize=9)
-    plt.grid(axis="y", linestyle="--", alpha=0.6)
-    plt.tight_layout()
-    os.makedirs("pdf", exist_ok=True)
-    plt.savefig("pdf/load_test_batches.png")
-    pdf.image("pdf/load_test_batches.png", w=160)
-
-    # 8. Conclusion
-    pdf.chapter_title("8. Conclusion")
-    pdf.chapter_body(
-        "The benchmarking results clearly demonstrate that Linear Scan is the most efficient algorithm..."
-    )
-
-    pdf.output("pdf/speed_report.pdf")
-    print("speed_report.pdf generated in /pdf/")
 
 
-if __name__ == "__main__":
-    generate_pdf()
+def get_performance_analysis_section() -> List[Any]:
+    elements: List[Any] = [
+        section_heading("Performance Analysis"),
+        Paragraph(
+            "Benchmark results show that with caching (reread_on_query=False), Linear Scan and "
+            "Generator Scan achieved the fastest times for large datasets, while Regex Match was "
+            "slower due to pattern compilation overhead. Set Membership excelled when using cache, "
+            "but required significant time when re-reading due to repeated set construction. "
+            "Multithreaded Scan provided benefits for large datasets, and Binary Search was efficient "
+            "for cached sorted data but slow when re-reading unsorted files.\n\n"
+            "The stress test revealed that as QPS increased, total execution time grew linearly "
+            "until the server's capacity limit was reached, at which point failure rates rose sharply.",
+            styles["Normal"]
+        ),
+        Spacer(1, 12)
+    ]
+    elements.extend(get_benchmark_elements())  # Tables + benchmark chart
+    elements.extend(get_stress_test_elements())  # Stress test chart
+    return elements
+
+
+def get_conclusions_section() -> List[Any]:
+    return [
+        section_heading("Conclusions"),
+        Paragraph(
+            "The tests demonstrate that caching dramatically improves search performance for most algorithms. "
+            "For large datasets, Linear Scan, Generator Scan, and Set Membership (cached) provide the best balance "
+            "of speed and simplicity. Regex Match is most useful when pattern flexibility is required. "
+            "The server stress test highlights the importance of optimizing for QPS handling and monitoring "
+            "failure rates to avoid performance degradation under load.",
+            styles["Normal"]
+        ),
+        Spacer(1, 12)
+    ]
+
+
+# Build PDF
+os.makedirs("pdf", exist_ok=True)
+pdf_path: str = os.path.join("pdf", "speed_report.pdf")
+doc = SimpleDocTemplate(pdf_path)
+
+elements: List[Any] = []
+elements.extend(get_intro_section())
+elements.extend(get_setup_section())
+elements.extend(get_algorithms_overview_section())
+elements.extend(get_performance_analysis_section())
+elements.extend(get_conclusions_section())
+
+doc.build(elements)
+print(f"Structured report saved to {pdf_path}")

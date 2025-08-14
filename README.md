@@ -1,6 +1,6 @@
 # String Search Server
 
-This is a high-performance TCP server designed to search for strings within large text files. In this context, we used the file 200k.txt. The server supports SSL connections, configurable parameters, and can benchmark multiple file-search algorithms. It includes a full testing suite (pytest) and benchmarking scripts that generate performance reports in PDF format.
+This is a high-performance TCP server designed to search for strings within large text files. In this context, we used the file 200k.txt. The server supports SSL connections, configurable parameters, and can benchmark multiple file-search algorithms when reread_on_query is True or False. It includes a full testing suite (pytest) and benchmarking scripts that generate performance reports in PDF format.
 
 # Features
 
@@ -37,18 +37,16 @@ keyfile=ssl/key.pem
 ├── 200k.txt
 ├── README.md
 ├── benchmark_algorithms.py
-├── benchmark_file_sizes.py
 ├── client.py
 ├── config.txt
-├── generate_speed_report.py
 ├── main.py
 ├── pdf/
-│ ├── load_test_batches.png
-│ ├── performance_chart.png
+│ ├── execution_time_plot.png 
+│ ├── comparison_chart.png
+│ ├── results.csv   
 │ └── speed_report.pdf
 ├── requirements.txt
 ├── run_server.sh
-├── search_algorithms.py
 ├── server/
 │ ├── init.py
 │ ├── config.py
@@ -230,11 +228,13 @@ Run the benchmarked algorithms with;
 python3 benchmark_algorithms.py
 ```
 
-# File Size vs Time
+# Speed Report Running
 How to run:
 
 ```
-python3 benchmark_file_sizes.py
+python3 benchmark_algorithms.py
+python3 stress_test_client.py
+python3 generate_speed_report.py
 ```
 
 # Configuration
